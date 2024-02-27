@@ -952,9 +952,9 @@ int open_clientfd(char *hostname, char *port) {
     struct addrinfo hints, *listp, *p;
 
     /* Get a list of potential server addresses */
-    memset(&hints, 0, sizeof(struct addrinfo));
+    memset(&hints, 0, sizeof(struct addrinfo));//소켓 주소 구조에 sin_family,sin_port,sin_addr 나머지 부분 0
     hints.ai_socktype = SOCK_STREAM;  /* Open a connection */
-    hints.ai_flags = AI_NUMERICSERV;  /* ... using a numeric port arg. */
+    hints.ai_flags = AI_NUMERICSERV;  /* using a numeric port arg. */
     hints.ai_flags |= AI_ADDRCONFIG;  /* Recommended for connections */
     if ((rc = getaddrinfo(hostname, port, &hints, &listp)) != 0) {
         fprintf(stderr, "getaddrinfo failed (%s:%s): %s\n", hostname, port, gai_strerror(rc));
@@ -964,11 +964,11 @@ int open_clientfd(char *hostname, char *port) {
     /* Walk the list for one that we can successfully connect to */
     for (p = listp; p; p = p->ai_next) {
         /* Create a socket descriptor */
-        if ((clientfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) 
+        if ((clientfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) //연결 될 때까지
             continue; /* Socket failed, try the next */
 
         /* Connect to the server */
-        if (connect(clientfd, p->ai_addr, p->ai_addrlen) != -1) 
+        if (connect(clientfd, p->ai_addr, p->ai_addrlen) != -1)  // 서버에 연결되면 탈출
             break; /* Success */
         if (close(clientfd) < 0) { /* Connect failed, try another */  //line:netp:openclientfd:closefd
             fprintf(stderr, "open_clientfd: close failed: %s\n", strerror(errno));
@@ -1016,7 +1016,8 @@ int open_listenfd(char *port)
             continue;  /* Socket failed, try the next */
 
         /* Eliminates "Address already in use" error from bind */
-        setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR,    //line:netp:csapp:setsockopt
+        //socket option 설정
+        setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR,    //line:netp:csapp:setsockopt,
                    (const void *)&optval , sizeof(int));
 
         /* Bind the descriptor to the address */
