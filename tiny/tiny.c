@@ -23,7 +23,7 @@ int main(int argc, char **argv)
     }
 
     listenfd = Open_listenfd(argv[1]);//argv[1] == port
-    while (1) { // 반복 실행 서버 클라이언트들 처리하기 위해서
+    while (1) { // 반복 실행, 클라이언트들 처리하기 위해서
 	clientlen = sizeof(clientaddr);
 	connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen); //line:netp:tiny:accept
         Getnameinfo((SA *) &clientaddr, clientlen, hostname, MAXLINE, 
@@ -52,13 +52,13 @@ void doit(int fd)
     if (!Rio_readlineb(&rio, buf, MAXLINE))  //line:netp:doit:readrequest //읽기 실패시
         return;
     printf("%s", buf); // 버퍼 출력
-    sscanf(buf, "%s %s %s", method, uri, version);//버퍼에 있는 것 변수에 저장       //line:netp:doit:parserequest
+    sscanf(buf, "%s %s %s", method, uri, version);//버퍼에 있는 것 변수에 저장, 버퍼는 비워지지 않음      //line:netp:doit:parserequest
     if (strcasecmp(method, "GET")) {//GET일 때 0 반환, 다르면 negative || positive           //line:netp:doit:beginrequesterr
         clienterror(fd, method, "501", "Not Implemented",
                     "Tiny does not implement this method");
         return;
     }                                                    //line:netp:doit:endrequesterr
-    read_requesthdrs(&rio);//읽기만 함                             //line:netp:doit:readrequesthdrs
+    read_requesthdrs(&rio);//헤더 읽기                            //line:netp:doit:readrequesthdrs
 
     /* Parse URI from GET request */
     is_static = parse_uri(uri, filename, cgiargs);       //line:netp:doit:staticcheck
@@ -159,10 +159,13 @@ void serve_static(int fd, char *filename, int filesize)
 
     /* Send response body to client */
     srcfd = Open(filename, O_RDONLY, 0); //line:netp:servestatic:open
-    srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0); //line:netp:servestatic:mmap
+    // srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0); //line:netp:servestatic:mmap
+    srcp = (char*)malloc(filesize);
+    Rio_readn(fd,buf,filesize);
     Close(srcfd);                       //line:netp:servestatic:close
     Rio_writen(fd, srcp, filesize);     //line:netp:servestatic:write
-    Munmap(srcp, filesize);             //line:netp:servestatic:munmap
+    // Munmap(srcp, filesize);             //line:netp:servestatic:munmap
+    free(srcp);
 }
 
 /*
