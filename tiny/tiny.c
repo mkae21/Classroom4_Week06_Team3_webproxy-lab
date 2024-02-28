@@ -97,7 +97,7 @@ void read_requesthdrs(rio_t *rp)
 
     Rio_readlineb(rp, buf, MAXLINE); //rp로부터 MAXLINE 만큼 읽고 buf에 저장
     printf("%s", buf);
-    while(strcmp(buf, "\r\n")) {//끝까지 읽기          //line:netp:readhdrs:checkterm
+    while(strcmp(buf, "\r\n")) {//끝까지 읽기
 	Rio_readlineb(rp, buf, MAXLINE);
 	printf("%s", buf);
     }
@@ -178,6 +178,8 @@ void get_filetype(char *filename, char *filetype)
 	strcpy(filetype, "image/png");
     else if (strstr(filename, ".jpg"))
 	strcpy(filetype, "image/jpeg");
+    else if(strstr(filename,".mp4"))
+    strcpy(filetype,"video.mp4");
     else
 	strcpy(filetype, "text/plain");
 }  
