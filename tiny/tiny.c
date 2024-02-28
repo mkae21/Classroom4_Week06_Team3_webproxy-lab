@@ -1,11 +1,3 @@
-/* $begin tinymain */
-/*
- * tiny.c - A simple, iterative HTTP/1.0 Web server that uses the 
- *     GET method to serve static and dynamic content.
- *
- * Updated 11/2019 droh 
- *   - Fixed sprintf() aliasing issue in serve_static(), and clienterror().
- */
 #include "csapp.h"
 
 void doit(int fd);
@@ -30,8 +22,8 @@ int main(int argc, char **argv)
 	exit(1);
     }
 
-    listenfd = Open_listenfd(argv[1]);
-    while (1) {
+    listenfd = Open_listenfd(argv[1]);//argv[1] == port
+    while (1) { // 반복 실행 서버 클라이언트들 처리하기 위해서
 	clientlen = sizeof(clientaddr);
 	connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen); //line:netp:tiny:accept
         Getnameinfo((SA *) &clientaddr, clientlen, hostname, MAXLINE, 
@@ -57,20 +49,20 @@ void doit(int fd)
 
     /* Read request line and headers */
     Rio_readinitb(&rio, fd);
-    if (!Rio_readlineb(&rio, buf, MAXLINE))  //line:netp:doit:readrequest
+    if (!Rio_readlineb(&rio, buf, MAXLINE))  //line:netp:doit:readrequest //읽기 실패시
         return;
-    printf("%s", buf);
-    sscanf(buf, "%s %s %s", method, uri, version);       //line:netp:doit:parserequest
-    if (strcasecmp(method, "GET")) {                     //line:netp:doit:beginrequesterr
+    printf("%s", buf); // 버퍼 출력
+    sscanf(buf, "%s %s %s", method, uri, version);//버퍼에 있는 것 변수에 저장       //line:netp:doit:parserequest
+    if (strcasecmp(method, "GET")) {//GET일 때 0 반환, 다르면 negative || positive           //line:netp:doit:beginrequesterr
         clienterror(fd, method, "501", "Not Implemented",
                     "Tiny does not implement this method");
         return;
     }                                                    //line:netp:doit:endrequesterr
-    read_requesthdrs(&rio);                              //line:netp:doit:readrequesthdrs
+    read_requesthdrs(&rio);//읽기만 함                             //line:netp:doit:readrequesthdrs
 
     /* Parse URI from GET request */
     is_static = parse_uri(uri, filename, cgiargs);       //line:netp:doit:staticcheck
-    if (stat(filename, &sbuf) < 0) {                     //line:netp:doit:beginnotfound
+    if (stat(filename, &sbuf) < 0) { //filename 정보 가져옴                    //line:netp:doit:beginnotfound
 	clienterror(fd, filename, "404", "Not found",
 		    "Tiny couldn't find this file");
 	return;
@@ -103,9 +95,9 @@ void read_requesthdrs(rio_t *rp)
 {
     char buf[MAXLINE];
 
-    Rio_readlineb(rp, buf, MAXLINE);
+    Rio_readlineb(rp, buf, MAXLINE); //rp로부터 MAXLINE 만큼 읽고 buf에 저장
     printf("%s", buf);
-    while(strcmp(buf, "\r\n")) {          //line:netp:readhdrs:checkterm
+    while(strcmp(buf, "\r\n")) {//끝까지 읽기          //line:netp:readhdrs:checkterm
 	Rio_readlineb(rp, buf, MAXLINE);
 	printf("%s", buf);
     }
@@ -118,7 +110,7 @@ void read_requesthdrs(rio_t *rp)
  *             return 0 if dynamic content, 1 if static
  */
 /* $begin parse_uri */
-int parse_uri(char *uri, char *filename, char *cgiargs) 
+int parse_uri(char *uri, char *filename, char *cgiargs)
 {
     char *ptr;
 
