@@ -125,12 +125,12 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
     char *ptr;
 
     if (!strstr(uri, "cgi-bin"))           // uri가 cgi-bin 아닐 때
-    { /* Static content */                 // line:netp:parseuri:isstatic
-        strcpy(cgiargs, "");               // line:netp:parseuri:clearcgi
-        strcpy(filename, ".");             // line:netp:parseuri:beginconvert1
-        strcat(filename, uri);             // line:netp:parseuri:endconvert1
+    { /* Static content */                 
+        strcpy(cgiargs, "");               
+        strcpy(filename, ".");             
+        strcat(filename, uri);             
         if (uri[strlen(uri) - 1] == '/')   // 마지막에 '/' 붙이기   // line:netp:parseuri:slashcheck
-            strcat(filename, "home.html"); // line:netp:parseuri:appenddefault
+            strcat(filename, "home.html"); 
         return 1;
     }
     else
