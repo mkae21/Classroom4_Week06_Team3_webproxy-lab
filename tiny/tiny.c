@@ -180,12 +180,12 @@ void serve_static(int fd, char *filename, int filesize, char *method)
     //GET 요청시
     srcfd = Open(filename, O_RDONLY, 0); //요청 파일 open
     // srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0); //line:netp:servestatic:mmap
-    srcp = (char *)malloc(filesize);
+    srcp = (char *)Malloc(filesize);
     Rio_readn(srcfd, srcp, filesize);
     Close(srcfd);                   //메모리 누수 주의
     Rio_writen(fd, srcp, filesize); // line:netp:servestatic:write
     // Munmap(srcp, filesize);             //line:netp:servestatic:munmap
-    free(srcp);//메모리 누수 주의
+    Free(srcp);//메모리 누수 주의
 }
 
 /*

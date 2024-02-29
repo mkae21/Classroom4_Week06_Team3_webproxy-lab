@@ -39,7 +39,7 @@ int main(int argc, char **argv)
         printf("Accepted connection from (%s, %s)\n", client_hostname, client_port);
         doit(*clientfd);
         Close(*clientfd);
-        free(clientfd);
+        Free(clientfd);
     }
 }
 
