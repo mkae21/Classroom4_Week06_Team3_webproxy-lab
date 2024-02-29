@@ -185,7 +185,7 @@ void serve_static(int fd, char *filename, int filesize, char *method)
     Close(srcfd);                   //메모리 누수 주의
     Rio_writen(fd, srcp, filesize); // line:netp:servestatic:write
     // Munmap(srcp, filesize);             //line:netp:servestatic:munmap
-    free(srcp)//메모리 누수 주의
+    free(srcp);//메모리 누수 주의
 }
 
 /*
