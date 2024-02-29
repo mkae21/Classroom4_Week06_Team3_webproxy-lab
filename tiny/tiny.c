@@ -50,12 +50,13 @@ void doit(int fd)
     rio_t rio;
 
     /* Read request line and headers */
+    //클라이언트가 보낸 헤더 읽기 시작
     Rio_readinitb(&rio, fd);
     if (!Rio_readlineb(&rio, buf, MAXLINE)) // line:netp:doit:readrequest //읽기 실패시
         return;
     printf("%s", buf);                                           // 버퍼 출력
     sscanf(buf, "%s %s %s", method, uri, version);               // 버퍼에 있는 것 변수에 저장\     //line:netp:doit:parserequest
-    if ((strcasecmp(method, "GET")) && (strcmp(method, "HEAD"))) // HEAD는 header외에는 전송하지 않는다.
+    if ((strcasecmp(method, "GET")) && (strcmp(method, "HEAD"))) // Method HEAD와 GET 사용 가능하게 
     {                                                            // GET일 때 0 반환, 다르면 negative || positive           //line:netp:doit:beginrequesterr
         clienterror(fd, method, "501", "Not Implemented",
                     "Tiny does not implement this method");
@@ -170,20 +171,21 @@ void serve_static(int fd, char *filename, int filesize, char *method)
     sprintf(buf, "Content-type: %s\r\n\r\n", filetype);
     Rio_writen(fd, buf, strlen(buf)); // line:netp:servestatic:endserve
 
-    if (strstr(method, "HEAD"))
-    { // method 배열에 HEAD있다면 true , head만 전송
+    if (strstr(method, "HEAD"))// method가  HEAD라면  head만 전송
+    { 
         return;
     }
 
     /* Send response body to client */
-    srcfd = Open(filename, O_RDONLY, 0); // line:netp:servestatic:open
+    //GET 요청시
+    srcfd = Open(filename, O_RDONLY, 0); //요청 파일 open
     // srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0); //line:netp:servestatic:mmap
     srcp = (char *)malloc(filesize);
     Rio_readn(srcfd, srcp, filesize);
-    Close(srcfd);                   // line:netp:servestatic:close
+    Close(srcfd);                   //메모리 누수 주의
     Rio_writen(fd, srcp, filesize); // line:netp:servestatic:write
     // Munmap(srcp, filesize);             //line:netp:servestatic:munmap
-    free(srcp);
+    free(srcp)//메모리 누수 주의
 }
 
 /*

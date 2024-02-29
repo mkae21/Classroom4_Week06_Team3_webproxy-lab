@@ -2,7 +2,9 @@
 #include <signal.h>
 
 #include "csapp.h"
+#include "cache.h"
 
+void *thread(void *vargp);
 void doit(int clientfd);
 void read_requesthdrs(rio_t *rp, void *buf, int serverfd, char *hostname, char *port);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg);
@@ -39,9 +41,18 @@ int main(int argc, char **argv)
         *clientfd = Accept(listenfd, (SA *)&clientaddr, &clientlen); // 클라이언트 연결 요청 수신
         Getnameinfo((SA *)&clientaddr, clientlen, client_hostname, MAXLINE, client_port, MAXLINE, 0);
         printf("Accepted connection from (%s, %s)\n", client_hostname, client_port);
-        doit(*clientfd);
-        close(*clientfd);
+        Pthread_create(&tid, NULL, thread, clientfd); // Concurrent 프록시
     }
+}
+
+void *thread(void *vargp)
+{
+    int clientfd = *((int *)vargp);
+    Pthread_detach(pthread_self());
+    Free(vargp);
+    doit(clientfd);
+    Close(clientfd);
+    return NULL;
 }
 
 void doit(int clientfd)
@@ -71,20 +82,29 @@ void doit(int clientfd)
         return;
     }
 
-    /* 1️ -2) Request Line 전송 [ Proxy ->  Server] */
+    // 현재 요청이 캐싱된 요청(path)인지 확인
+    web_object_t *cached_object = find_cache(path);
+    if (cached_object) // 캐싱 되어있다면
+    {
+        send_cache(cached_object, clientfd); // 캐싱된 객체를 Client에 전송
+        read_cache(cached_object);           // 사용한 웹 객체의 순서를 맨 앞으로 갱신
+        return;                              // Server로 요청을 보내지 않고 통신 종료
+    }
+
+    /* 1️⃣ -2) Request Line 전송 [🚒 Proxy -> 💻 Server] */
     // Server 소켓 생성
     serverfd = is_local_test ? Open_clientfd(hostname, port) : Open_clientfd("52.79.234.188", port);
     if (serverfd < 0)
     {
-        clienterror(serverfd, method, "502", "Bad Gateway", " Failed to establish connection with the end server");
+        clienterror(serverfd, method, "502", "Bad Gateway", "📍 Failed to establish connection with the end server");
         return;
     }
     Rio_writen(serverfd, request_buf, strlen(request_buf));
 
-    /* 2 Request Header 읽기 & 전송 [ Client ->  Proxy ->  Server] */
+    /* 2️⃣ Request Header 읽기 & 전송 [🙋‍♀️ Client -> 🚒 Proxy -> 💻 Server] */
     read_requesthdrs(&request_rio, request_buf, serverfd, hostname, port);
 
-    /* 3️ Response Header 읽기 & 전송 [ Server ->  Proxy ->  Client] */
+    /* 3️⃣ Response Header 읽기 & 전송 [💻 Server -> 🚒 Proxy -> 🙋‍♀️ Client] */
     Rio_readinitb(&response_rio, serverfd);
     while (strcmp(response_buf, "\r\n"))
     {
@@ -94,7 +114,7 @@ void doit(int clientfd)
         Rio_writen(clientfd, response_buf, strlen(response_buf));
     }
 
-    /* 4 Response Body 읽기 & 전송 [ Server -> Proxy ->  Client] */
+    /* 4️⃣ Response Body 읽기 & 전송 [💻 Server -> 🚒 Proxy -> 🙋‍♀️ Client] */
     response_ptr = malloc(content_length);
     Rio_readnb(&response_rio, response_ptr, content_length);
     Rio_writen(clientfd, response_ptr, content_length); // Client에 Response Body 전송
